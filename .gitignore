@@ -1,0 +1,5 @@
+/mypimcoresite/var
+/mypimcoresite/web/var
+/mypimcoresite/vendor
+/vendor
+chef-runtime.path
