@@ -3,10 +3,8 @@ $location=Get-Location;
 # Deploy using Chef
 Invoke-ChefAppDeployPath $location mypimcoresite -Install;
 
-$deployment = (Invoke-ChefAppGetDeployment mypimcoresite).DeploymentActive;
-$runtimePath = $deployment.runtimePath;
-
 # Bring in the application's php runtime
+$runtimePath = $(Invoke-ChefAppGetDeployment mypimcoresite).DeploymentActive.runtimePath;
 &"$runtimePath\include_path\setenv.ps1";
 
 #Remove symlnks and web.config before first install
@@ -18,5 +16,13 @@ composer create-project pimcore/demo-ecommerce mypimcoresite;
 
 Copy-Item -Path "$location/web.config" -Destination "$location/mypimcoresite/web/web.config";
 
+# Redeploy to recover the symlinks
+Invoke-ChefAppRedeploy mypimcoresite -Force
 
+# Bring in the application's php runtime (changed after redeploy)
+$runtimePath = $(Invoke-ChefAppGetDeployment mypimcoresite).DeploymentActive.runtimePath;
+&"$runtimePath\include_path\setenv.ps1";
+
+# Run installer
+&.\"mypimcoresite/vendor/bin/pimcore-install"
 

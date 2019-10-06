@@ -118,3 +118,9 @@ services:
       public:
         path: 'public_var'
         mountpath: 'mypimcoresite/web/var'
+        persist_on_deploy: true
+  cron-segments-update:
+    type: 'scheduler'
+    command: 'Invoke-Expression "$($Env:PHPRC)\php.exe -c $($Env:PHPRC)\php.ini -f $($Env:AppPath)\mypimcoresite\bin\console maintenance"'
+    frequency: 5
+    disabled: false
