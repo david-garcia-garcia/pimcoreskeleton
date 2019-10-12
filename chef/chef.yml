@@ -114,7 +114,7 @@ services:
       private:
         path: 'private_var'
         mountpath: 'mypimcoresite/var'
-    mounts:
+        persist_on_deploy: true
       public:
         path: 'public_var'
         mountpath: 'mypimcoresite/web/var'
