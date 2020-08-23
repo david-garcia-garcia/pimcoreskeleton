@@ -27,6 +27,30 @@ install:
       New-Item -ItemType directory -Force -Path $DESTINATION
       (new-object -com shell.application).namespace($DESTINATION).CopyHere((new-object -com shell.application).namespace($ZipPath).Items(),16)
       Remove-Item $ZipPath
+  - ps: |
+      Enable-WindowsOptionalFeature -FeatureName "IIS-CertProvider" -Online;
+      $password = "LbdElp2309&589" | ConvertTo-SecureString -AsPlainText -Force;
+      #User to search for
+      $USERNAME = "User03";
+      $ObjLocalUser = $null;
+      try {
+        Write-Verbose "Searching for $($USERNAME) in LocalUser DataBase";
+        $ObjLocalUser = Get-LocalUser $USERNAME 2> $null;
+        Write-Verbose "User $($USERNAME) was found";
+      }
+      catch [Microsoft.PowerShell.Commands.UserNotFoundException] {
+        "User $($USERNAME) was not found" | Write-Warning;
+      }
+      catch {
+        "An unspecifed error occured" | Write-Error;
+        throw "Unable to create user: $($USERNAME)";
+      }
+      If (!$ObjLocalUser) {
+        Write-Verbose "Creating User $($USERNAME)";
+        New-LocalUser "User03" -Password $password -FullName "Third User" -Description "Dummy account for local certificate store";
+        Add-LocalGroupMember -Sid "S-1-5-32-544" -Member "User03";
+        Enable-WebCentralCertProvider -CertStoreLocation "C:\Windows\Temp" -UserName "User03" -Password "LbdElp2309&589";
+      }
   - ps: Invoke-ChefSelfInstall -Path "c:\chef"
   - ps: Remove-WebSite -Name "Default Web Site"
   - ps: $Env:Path = "C:\Program Files\OpenSSL;" + $Env:Path;
