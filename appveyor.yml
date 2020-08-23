@@ -85,7 +85,11 @@ install:
       }
   - cmd: composer global require hirak/prestissimo
   - ps: Set-Location $Env:APPVEYOR_BUILD_FOLDER
-  - ps: .\setup.ps1
+  - ps: .\setup.ps1 2>&1 > "$Env:TestLogDir\setup.log"
+  - ps: |
+      If ($Env:APPVEYOR_REPO_COMMIT_MESSAGE_FULL -imatch 'rdpwget') {
+        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      }
   - ps: wget "http://www.mypimcoresite.com/"
 build_script:
   - cmd: echo "No build"
