@@ -28,10 +28,11 @@
   php:
     type: 'php'
     runtime:
-      - {type: 'dl', uri: 'https://windows.php.net/downloads/releases/archives/php-7.3.9-nts-Win32-VC15-x64.zip', maps: {'*' : 'php/'}}
-      - {type: 'dl', uri: 'https://windows.php.net/downloads/pecl/releases/xdebug/2.7.2/php_xdebug-2.7.2-7.3-nts-vc15-x64.zip', maps: {'php_xdebug.dll':'php/ext/php_xdebug.dll'}}
+      - {type: 'dl', uri: 'https://windows.php.net/downloads/releases/archives/php-7.4.8-nts-Win32-vc15-x64.zip', maps: {'*' : 'php/'}}
+      - {type: 'dl', uri: 'https://windows.php.net/downloads/pecl/releases/xdebug/2.9.6/php_xdebug-2.9.6-7.4-nts-vc15-x64.zip', maps: {'php_xdebug.dll':'php/ext/php_xdebug.dll'}}
       - {type: 'dl', uri: 'http://curl.haxx.se/ca/cacert.pem', maps: {'cacert.pem': '/cacert.pem'}}
-      - {type: 'dl', uri: 'file://php_bin/php_73_wincache_nts_x64.zip' , maps: {'php_wincache.dll':'php/ext/php_wincache.dll'}}
+      - {type: 'dl', uri: 'file://php_bin/php_wincache.zip' , maps: {'php_wincache.dll':'php/ext/php_wincache.dll'}}
+      - {type: 'dl', uri: 'file://php_bin/php_blackfire.zip' , maps: {'php_blackfire.dll':'php/ext/php_blackfire.dll'}}
       - {type: 'file', 'action':'copy', 'source':'php/php.ini-production', 'destination':'php/php.ini'}
       - {type: 'ini', 'key':curl.cainfo, 'value':'%RUNTIME%/cacert.pem'}
       - {type: 'ini', 'key':openssl.cafile, 'value':'%RUNTIME%/cacert.pem'}
