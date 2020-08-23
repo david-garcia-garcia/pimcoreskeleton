@@ -1,0 +1,82 @@
+skip_tags: true
+init:
+  - ps: ''
+services:
+  - mssql2017
+  - iis
+hosts:
+  www.mypimcoresite.com: 127.0.0.1
+image:
+  - Visual Studio 2019
+install:
+  - ps: $Env:APPVEYOR_REPO_COMMIT_MESSAGE_FULL = "$env:APPVEYOR_REPO_COMMIT_MESSAGE $env:APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED".TrimEnd();
+  - ps: $Env:TestLogDir = "$Env:BuildDir\TestLogs";
+  - ps: $Env:TestLogDirClone = "$Env:BuildDir\TestLogsClone";
+  - cmd: mkdir %TestLogDir%
+  - cmd: mkdir %TestLogDirClone%
+  - ps: Start-Transcript -path "$Env:BuildDir\console.txt" -append
+  - ps: $Env:APPVEYOR_REPO_COMMIT_MESSAGE_FULL = "$env:APPVEYOR_REPO_COMMIT_MESSAGE $env:APPVEYOR_REPO_COMMIT_MESSAGE_EXTENDED".TrimEnd();
+  - ps: Start-Service 'MSSQL$SQL2017' | out-null
+  - ps: Set-Service 'SQLAgent$SQL2017' -StartupType Manual | out-null
+  - ps: Start-Service W3SVC | out-null
+  - ps: choco install php -y --no-progress 2>&1 > "$Env:TestLogDir\choco_install_php.txt"
+  - ps: choco install urlrewrite -y --no-progress 2>&1 > "$Env:TestLogDir\choco_install_urlrewrite.txt"
+  - ps: Install-Module PsIni
+  - ps: | 
+      $WorkingDir = Convert-Path .
+      $ZipPath = Join-Path $WorkingDir '\chef_cmdlet.zip'
+      (New-Object Net.WebClient).DownloadFile('https://ci.appveyor.com/api/projects/David19767/iischef/artifacts/iischef.cmdlet.zip?branch=1.x', $ZipPath)
+      $DESTINATION= Join-Path $env:ProgramFiles "\WindowsPowerShell\Modules\Chef"
+      New-Item -ItemType directory -Force -Path $DESTINATION
+      (new-object -com shell.application).namespace($DESTINATION).CopyHere((new-object -com shell.application).namespace($ZipPath).Items(),16)
+      Remove-Item $ZipPath
+  - ps: $Env:Path = "C:\Program Files\OpenSSL;" + $Env:Path;
+  - cmd: sc config wuauserv start= auto
+  - cmd: net start wuauserv
+  - ps: (New-Object Net.WebClient).DownloadFile('http://curl.haxx.se/ca/cacert.pem', 'C:\tools\php74\cacert.pem')
+  - ps: new-item c:\composer -itemtype directory
+  - ps: $Env:Path = "C:\tools\php74;" + $Env:Path;
+  - ps: $Env:Path = "C:\tools\php74;" + $Env:Path;
+  - ps: Add-Content C:\tools\php74\php.ini "extension_dir=ext `n"
+  - ps: Add-Content C:\tools\php74\php.ini "extension=php_openssl.dll `n"
+  - ps: Add-Content C:\tools\php74\php.ini "extension=php_mbstring.dll `n"
+  - ps: Add-Content C:\tools\php74\php.ini "extension=php_curl.dll `n"
+  - ps: Add-Content C:\tools\php74\php.ini "extension=php_gd2.dll `n"
+  - ps: Add-Content C:\tools\php74\php.ini "curl.cainfo=C:\tools\php74\cacert.pem `n"
+  - ps: Add-Content C:\tools\php74\php.ini "openssl.cafile=C:\tools\php74\cacert.pem `n"
+  - ps: Add-Content C:\tools\php74\php.ini "memory_limit=2048M `n"
+  - ps: php -i | Out-File "$Env:TestLogDir\php-i.txt"
+  - cmd: cd /d C:\composer
+  # RDPFINISH
+  - ps: |
+      If ($Env:APPVEYOR_REPO_COMMIT_MESSAGE_FULL -imatch 'rdpcomposer') {
+        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      }
+  - cmd: choco install composer -y --no-progress
+  - ps: Add-Content C:\ProgramData\ComposerSetup\bin\composer.bat ""
+  - ps: refreshenv
+  - cmd: SET PATH=C:\ProgramData\ComposerSetup\bin;%PATH%
+  - ps: |
+      If ($Env:APPVEYOR_REPO_COMMIT_MESSAGE_FULL -imatch 'rdpcomposer') {
+        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      }
+  - cmd: composer global require hirak/prestissimo
+  - cmd: cd /d c:\projects
+  - ps: .\setup.ps1
+  - ps: wget "http://www.mypimcoresite.com/"
+build_script:
+  - cmd: echo "No build"
+on_finish:
+  - ps: echo "on_finish start";
+  - ps: Stop-Transcript
+  - cmd: echo Build Version %APPVEYOR_BUILD_VERSION%
+  # Add the chocolatey logs
+  - cmd: mkdir %TestLogDir%\ChocolateyLogs
+  - cmd: xcopy C:\ProgramData\chocolatey\logs %TestLogDir%\ChocolateyLogs /e /q & exit 0
+  # Add the npm-cache logs
+  - cmd: mkdir %TestLogDir%\npm-cache-logs
+  - cmd: xcopy %APPDATA%\npm-cache\_logs %TestLogDir%\npm-cache-logs /s /q & exit 0
+  # Zip and push test logs
+  - cmd: xcopy %TestLogDir% %TestLogDirClone% /q /s /e & exit 0
+  - cmd: 7z a -p"%APPVEYOR_BUILD_VERSION%" -r %BuildDir%\TestLogs.zip %TestLogDirClone%\* > null
+  - ps: Push-AppveyorArtifact "$Env:BuildDir\TestLogs.zip" -FileName "TestLogs.zip"
