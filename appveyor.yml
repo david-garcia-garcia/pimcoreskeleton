@@ -27,6 +27,7 @@ install:
       New-Item -ItemType directory -Force -Path $DESTINATION
       (new-object -com shell.application).namespace($DESTINATION).CopyHere((new-object -com shell.application).namespace($ZipPath).Items(),16)
       Remove-Item $ZipPath
+  - ps: Invoke-ChefSelfInstall -Path "c:\chef"
   - ps: $Env:Path = "C:\Program Files\OpenSSL;" + $Env:Path;
   - cmd: sc config wuauserv start= auto
   - cmd: net start wuauserv
